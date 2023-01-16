@@ -20,10 +20,10 @@ public class MemberService {
     public Mono<MemberDto> findMember(String email) {
         log.info("This is findMember in MemberService!!!!");
 
-        Mono<MemberDto> response = memberRepository.findByEmail(email).map(MemberDto::from);
-        return response;
+        return memberRepository.findByEmail(email).map(MemberDto::from);
     }
 
+    @Transactional
     public Mono<MemberDto> saveMember(String email, String nickname, String birthday, String profileUrl, Integer gender) {
         log.info("This is saveMember in MemberService!!!!");
 
@@ -34,8 +34,19 @@ public class MemberService {
         return savedMember.map(MemberDto::from);
     }
 
+    @Transactional
+    public Mono<Void> saveMember(MemberDto dto) {
+        log.info("This is saveMember in MemberService!!!!");
+
+        Member member = dto.toEntity();
+        log.info("{}", member);
+        return memberRepository.save(member).then(Mono.empty());
+    }
+
     @Transactional(readOnly = true)
     public Mono<Void> verifyExistEmail(String email) {
+        log.info("This is verifyExistEmail in MemberService!!!!");
+
         return memberRepository.findByEmail(email)
                 .flatMap(findMember -> {
                     if (findMember != null) {

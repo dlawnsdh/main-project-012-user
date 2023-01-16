@@ -30,8 +30,9 @@ public class JwtAuthenticationFilter implements WebFilter {
         log.info("Token: {}", token);
 
         if (StringUtils.hasText(token) && provider.validateToken(token)) {
+            log.info("Authentication Success!!");
             Authentication authentication = provider.getAuthentication(token);
-            ReactiveSecurityContextHolder.withAuthentication(authentication);
+            return chain.filter(exchange).contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
         }
         return chain.filter(exchange);
     }

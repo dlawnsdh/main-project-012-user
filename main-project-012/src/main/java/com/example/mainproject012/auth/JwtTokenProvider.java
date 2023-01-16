@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -38,25 +39,11 @@ public class JwtTokenProvider {
         secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String createAccessToken(Authentication authentication, Date expiration) {
-        String email;
-        Collection<? extends GrantedAuthority> authorities;
-        if (authentication.getPrincipal() instanceof DefaultOidcUser principal) {
-            email = principal.getEmail();
-            authorities = principal.getAuthorities();
-        }
-        else {
-            MemberPrincipal principal = (MemberPrincipal) authentication.getPrincipal();
-            email = principal.email();
-            authorities = principal.getAuthorities();
-        }
-
-        Claims claims = Jwts.claims().setSubject(email);
+    public String createAccessToken(MemberPrincipal principal, Date expiration) {
+        Claims claims = Jwts.claims().setSubject(principal.email());
         claims.put(
                 AUTHORITIES_KEY,
-                authorities.stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .collect(joining(","))
+                principal.getAuthorities()
         );
 
         return Jwts.builder()
@@ -67,18 +54,9 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String createRefreshToken(Authentication authentication, Date expiration) {
-        String email;
-        if (authentication.getPrincipal() instanceof DefaultOidcUser principal) {
-            email = principal.getEmail();
-        }
-        else {
-            MemberPrincipal principal = (MemberPrincipal) authentication.getPrincipal();
-            email = principal.email();
-        }
-
+    public String createRefreshToken(MemberPrincipal principal, Date expiration) {
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(principal.email())
                 .setIssuedAt(Calendar.getInstance().getTime())
                 .setExpiration(expiration)
                 .signWith(secretKey, SignatureAlgorithm.HS256)

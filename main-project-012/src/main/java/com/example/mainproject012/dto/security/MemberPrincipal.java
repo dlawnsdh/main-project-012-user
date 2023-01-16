@@ -23,7 +23,7 @@ public record MemberPrincipal(
         String memo,
         Collection<? extends GrantedAuthority> authorities,
         Map<String, Object> oAuth2Attributes
-) implements OAuth2User, OidcUser {
+) implements OAuth2User {
     public static MemberPrincipal of(String email, Collection<? extends GrantedAuthority> authorities) {
         return new MemberPrincipal(email, null, null, null, null, null, authorities, Map.of());
     }
@@ -75,10 +75,6 @@ public record MemberPrincipal(
     @Override public Map<String, Object> getAttributes() { return oAuth2Attributes; }
     @Override public Collection<? extends GrantedAuthority> getAuthorities() { return authorities; }
     @Override public String getName() { return nickname; }
-
-    @Override public Map<String, Object> getClaims() { return oAuth2Attributes; }
-    @Override public OidcUserInfo getUserInfo() { return null; }
-    @Override public OidcIdToken getIdToken() { return null; }
 
     public enum RoleType {
         USER("ROLE_USER");

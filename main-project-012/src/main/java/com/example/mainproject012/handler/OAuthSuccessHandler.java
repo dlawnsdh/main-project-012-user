@@ -1,13 +1,20 @@
 package com.example.mainproject012.handler;
 
 import com.example.mainproject012.auth.JwtTokenProvider;
+import com.example.mainproject012.dto.security.GoogleOAuth2Response;
+import com.example.mainproject012.dto.security.KakaoOAuth2Response;
 import com.example.mainproject012.dto.security.MemberPrincipal;
 import com.example.mainproject012.service.MemberService;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.client.userinfo.DefaultReactiveOAuth2UserService;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.client.userinfo.ReactiveOAuth2UserService;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.server.DefaultServerRedirectStrategy;
 import org.springframework.security.web.server.ServerRedirectStrategy;
@@ -21,10 +28,12 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.net.URI;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Objects;
 
 @Slf4j
 @NoArgsConstructor
@@ -33,19 +42,16 @@ public class OAuthSuccessHandler implements ServerAuthenticationSuccessHandler {
     private ServerRedirectStrategy redirectStrategy = new DefaultServerRedirectStrategy();
     private ServerRequestCache requestCache = new WebSessionServerRequestCache();
     private JwtTokenProvider jwtTokenProvider;
-    //private OAuthMemberService oAuthMemberService;
     private MemberService memberService;
 
     public OAuthSuccessHandler(JwtTokenProvider jwtTokenProvider, MemberService memberService) {
         this.jwtTokenProvider = jwtTokenProvider;
-        //this.oAuthMemberService = oAuthMemberService;
         this.memberService = memberService;
     }
 
     public OAuthSuccessHandler(String location, JwtTokenProvider jwtTokenProvider, MemberService memberService) {
         this.location = URI.create(location);
         this.jwtTokenProvider = jwtTokenProvider;
-        //this.oAuthMemberService = oAuthMemberService;
         this.memberService = memberService;
     }
 
@@ -64,38 +70,26 @@ public class OAuthSuccessHandler implements ServerAuthenticationSuccessHandler {
             log.info("User info : {} : {}",key,  oAuth2User.getAttributes().get(key));
         log.info("---------------------------------------");
 
-
-        String email = (String) oAuth2User.getAttributes().get("email");
-        String name = (String) oAuth2User.getAttributes().get("name");
-        String picture = (String) oAuth2User.getAttributes().get("picture");
         MemberPrincipal principal;
-        if (!(oAuth2User instanceof DefaultOidcUser)) {
-            principal = (MemberPrincipal) authentication.getPrincipal();
-            email = principal.email();
+        if (oAuth2User instanceof DefaultOidcUser) {
+            GoogleOAuth2Response google = GoogleOAuth2Response.from(oAuth2User.getAttributes());
+            principal = google.toPrincipal();
 
-            if (memberService.verifyExistEmail(email) != null) {
-                memberService.saveMember(
-                        email,
-                        principal.nickname(),
-                        null,
-                        principal.profileUrl(),
-                        null
-                ).subscribe();
-            }
+            memberService.verifyExistEmail(principal.email())
+                    .then(memberService.saveMember(principal.toDto()))
+                    .subscribe();
+        }
+        else {
+            KakaoOAuth2Response kakao = KakaoOAuth2Response.from(oAuth2User.getAttributes());
+            principal = kakao.toPrincipal();
+
+            memberService.verifyExistEmail(principal.email())
+                    .then(memberService.saveMember(principal.toDto()))
+                    .subscribe();
         }
 
-        if (memberService.verifyExistEmail(email) != null) {
-            memberService.saveMember(
-                    email,
-                    name,
-                    null,
-                    picture,
-                    null
-            ).subscribe();
-        }
-
-        String accessToken = delegateAccessToken(authentication);
-        String refreshToken = delegateRefreshToken(authentication);
+        String accessToken = delegateAccessToken(principal);
+        String refreshToken = delegateRefreshToken(principal);
 
         log.info("accessToken: {}", accessToken);
         log.info("refreshToken: {}", refreshToken);
@@ -107,6 +101,37 @@ public class OAuthSuccessHandler implements ServerAuthenticationSuccessHandler {
                 .flatMap((location) -> this.redirectStrategy.sendRedirect(exchange, location));
     }
 
+    /*@Override
+    public Mono<OAuth2User> loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
+        final DefaultReactiveOAuth2UserService delegate = new DefaultReactiveOAuth2UserService();
+
+        Mono<OAuth2User> oAuth2User = delegate.loadUser(userRequest);
+
+        log.info("This is OAuthMemberService!!!!");
+
+        GoogleOAuth2Response googleResponse = GoogleOAuth2Response.from(Objects.requireNonNull(oAuth2User.block()).getAttributes());
+        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+        String email = String.valueOf(googleResponse.email());
+
+        return memberService.findMember(email)
+                .map(MemberPrincipal::from)
+                .publishOn(Schedulers.boundedElastic())
+                .mapNotNull(memberPrincipal -> {
+                    if (memberPrincipal == null) {
+                        return MemberPrincipal.from(
+                                Objects.requireNonNull(memberService.saveMember(
+                                        email,
+                                        googleResponse.nickname(),
+                                        null,
+                                        googleResponse.photoUrl(),
+                                        null
+                                ).block())
+                        );
+                    }
+                    return null;
+                });
+    }*/
+
     public void setLocation(URI location) {
         Assert.notNull(location, "location cannot be null");
         this.location = location;
@@ -117,14 +142,14 @@ public class OAuthSuccessHandler implements ServerAuthenticationSuccessHandler {
         this.redirectStrategy = redirectStrategy;
     }
 
-    private String delegateAccessToken(Authentication authentication) {
+    private String delegateAccessToken(MemberPrincipal principal) {
         Date expiration = jwtTokenProvider.getTokenExpiration(jwtTokenProvider.getAccessTokenExpirationMinutes());
-        return jwtTokenProvider.createAccessToken(authentication, expiration);
+        return jwtTokenProvider.createAccessToken(principal, expiration);
     }
 
-    private String delegateRefreshToken(Authentication authentication) {
+    private String delegateRefreshToken(MemberPrincipal principal) {
         Date expiration = jwtTokenProvider.getTokenExpiration(jwtTokenProvider.getRefreshTokenExpirationMinutes());
-        return jwtTokenProvider.createRefreshToken(authentication, expiration);
+        return jwtTokenProvider.createRefreshToken(principal, expiration);
     }
 
     private URI createUri(String accessToken, String refreshToken) {
