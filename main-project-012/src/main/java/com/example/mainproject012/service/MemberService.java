@@ -24,10 +24,10 @@ public class MemberService {
     }
 
     @Transactional
-    public Mono<MemberDto> saveMember(String email, String nickname, String birthday, String profileUrl, Integer gender) {
+    public Mono<MemberDto> saveMember(String email, String nickname, String birthday, String profileUrl, Integer gender, String registrationId) {
         log.info("This is saveMember in MemberService!!!!");
 
-        Member member = Member.of(email, nickname, birthday, profileUrl, gender);
+        Member member = Member.of(email, nickname, birthday, profileUrl, gender, registrationId);
         log.info("{}", member);
         Mono<Member> savedMember = memberRepository.save(member);
 
@@ -35,12 +35,12 @@ public class MemberService {
     }
 
     @Transactional
-    public Mono<Void> saveMember(MemberDto dto) {
+    public Mono<MemberDto> saveMember(MemberDto dto) {
         log.info("This is saveMember in MemberService!!!!");
 
         Member member = dto.toEntity();
         log.info("{}", member);
-        return memberRepository.save(member).then(Mono.empty());
+        return memberRepository.save(member).map(MemberDto::from);
     }
 
     @Transactional(readOnly = true)
