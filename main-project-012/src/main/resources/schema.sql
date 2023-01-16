@@ -6,6 +6,7 @@ create table if not exists member (
     profile_url varchar(100) not null,
     gender int null,
     memo varchar(255) null,
+    registration_id varchar(10) not null,
     created_at datetime not null,
     modified_at datetime not null,
     primary key (member_id)

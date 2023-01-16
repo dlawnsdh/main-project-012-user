@@ -23,7 +23,8 @@ public record GoogleOAuth2Response(
                 null,
                 null,
                 profileUrl,
-                null);
+                null
+        );
     }
 
 }

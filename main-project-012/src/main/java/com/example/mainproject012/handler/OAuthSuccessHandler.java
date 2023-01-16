@@ -4,15 +4,8 @@ import com.example.mainproject012.auth.JwtTokenProvider;
 import com.example.mainproject012.dto.security.GoogleOAuth2Response;
 import com.example.mainproject012.dto.security.KakaoOAuth2Response;
 import com.example.mainproject012.dto.security.MemberPrincipal;
-import com.example.mainproject012.service.MemberService;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.client.userinfo.DefaultReactiveOAuth2UserService;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
-import org.springframework.security.oauth2.client.userinfo.ReactiveOAuth2UserService;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -28,14 +21,66 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.net.URI;
-import java.util.Collection;
 import java.util.Date;
-import java.util.Objects;
 
 @Slf4j
+public class OAuthSuccessHandler implements ServerAuthenticationSuccessHandler {
+    private URI location = URI.create("/");
+    private final ServerRequestCache requestCache = new WebSessionServerRequestCache();
+    private final ServerRedirectStrategy redirectStrategy = new DefaultServerRedirectStrategy();
+    private JwtTokenProvider jwtTokenProvider;
+
+    public OAuthSuccessHandler(JwtTokenProvider jwtTokenProvider) {
+        this.jwtTokenProvider = jwtTokenProvider;
+    }
+
+    @Override
+    public Mono<Void> onAuthenticationSuccess(WebFilterExchange webFilterExchange, Authentication authentication) {
+        MemberPrincipal principal = (MemberPrincipal) authentication.getPrincipal();
+
+        String accessToken = delegateAccessToken(principal);
+        String refreshToken = delegateRefreshToken(principal);
+
+        log.info("accessToken: {}", accessToken);
+        log.info("refreshToken: {}", refreshToken);
+
+        location = createUri(accessToken, refreshToken);
+
+        ServerWebExchange exchange = webFilterExchange.getExchange();
+        return this.requestCache.getRedirectUri(exchange).defaultIfEmpty(this.location)
+                .flatMap((location) -> this.redirectStrategy.sendRedirect(exchange, location));
+    }
+
+    private String delegateAccessToken(MemberPrincipal principal) {
+        Date expiration = jwtTokenProvider.getTokenExpiration(jwtTokenProvider.getAccessTokenExpirationMinutes());
+        return jwtTokenProvider.createAccessToken(principal, expiration);
+    }
+
+    private String delegateRefreshToken(MemberPrincipal principal) {
+        Date expiration = jwtTokenProvider.getTokenExpiration(jwtTokenProvider.getRefreshTokenExpirationMinutes());
+        return jwtTokenProvider.createRefreshToken(principal, expiration);
+    }
+
+    private URI createUri(String accessToken, String refreshToken) {
+        MultiValueMap<String, String> queryParams = new LinkedMultiValueMap<>();
+        queryParams.add("access_token", accessToken);
+        queryParams.add("refresh_token", refreshToken);
+
+        return UriComponentsBuilder
+                .newInstance()
+                .scheme("http")
+                .host("localhost")
+                .path("/token")
+                .queryParams(queryParams)
+                .build()
+                .toUri();
+    }
+
+}
+
+/*@Slf4j
 @NoArgsConstructor
 public class OAuthSuccessHandler implements ServerAuthenticationSuccessHandler {
     private URI location = URI.create("/");
@@ -101,7 +146,7 @@ public class OAuthSuccessHandler implements ServerAuthenticationSuccessHandler {
                 .flatMap((location) -> this.redirectStrategy.sendRedirect(exchange, location));
     }
 
-    /*@Override
+    *//*@Override
     public Mono<OAuth2User> loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         final DefaultReactiveOAuth2UserService delegate = new DefaultReactiveOAuth2UserService();
 
@@ -130,7 +175,7 @@ public class OAuthSuccessHandler implements ServerAuthenticationSuccessHandler {
                     }
                     return null;
                 });
-    }*/
+    }*//*
 
     public void setLocation(URI location) {
         Assert.notNull(location, "location cannot be null");
@@ -167,4 +212,4 @@ public class OAuthSuccessHandler implements ServerAuthenticationSuccessHandler {
                 .toUri();
     }
 
-}
+}*/

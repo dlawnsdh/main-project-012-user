@@ -28,30 +28,32 @@ public class Member {
 
     private String memo;
 
+    private String registrationId;
+
     @CreatedDate private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    private LocalDateTime modifiedAt;
+    @LastModifiedDate private LocalDateTime modifiedAt;
 
-    private Member(String email, String nickname, String birthday, String profileUrl, Integer gender, String memo) {
+    private Member(String email, String nickname, String birthday, String profileUrl, Integer gender, String memo, String registrationId) {
         this.email = email;
         this.nickname = nickname;
         this.birthday = birthday;
         this.profileUrl = profileUrl;
         this.gender = gender;
         this.memo = memo;
+        this.registrationId = registrationId;
     }
 
-    public static Member of(String email, String nickname, String birthday, String profileUrl, Integer gender, String memo) {
-        return new Member(email, nickname, birthday, profileUrl, gender, memo);
+    public static Member of(String email, String nickname, String birthday, String profileUrl, Integer gender, String memo, String registrationId) {
+        return new Member(email, nickname, birthday, profileUrl, gender, memo, registrationId);
     }
 
-    public static Member of(String email, String nickname, String birthday, String profileUrl, Integer gender) {
-        return new Member(email, nickname, birthday, profileUrl, gender, null);
+    public static Member of(String email, String nickname, String birthday, String profileUrl, Integer gender, String registrationId) {
+        return new Member(email, nickname, birthday, profileUrl, gender, null, registrationId);
     }
 
-    public static Member of(String email, String nickname, String profileUrl) {
-        return new Member(email, nickname, null, profileUrl, null, null);
+    public static Member of(String email, String nickname, String profileUrl, String registrationId) {
+        return new Member(email, nickname, null, profileUrl, null, null, registrationId);
     }
 
 }
