@@ -27,7 +27,7 @@ public class OAuthMemberService implements ReactiveOAuth2UserService<OAuth2UserR
 
         Mono<OAuth2User> oAuth2User = delegate.loadUser(userRequest);
 
-        log.info("This is QAuthMemberService!!!!");
+        log.info("This is OAuthMemberService!!!!");
 
         GoogleOAuth2Response googleResponse = GoogleOAuth2Response.from(Objects.requireNonNull(oAuth2User.block()).getAttributes());
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
@@ -40,7 +40,6 @@ public class OAuthMemberService implements ReactiveOAuth2UserService<OAuth2UserR
                     if (memberPrincipal == null) {
                         return MemberPrincipal.from(
                                 Objects.requireNonNull(memberService.saveMember(
-                                        registrationId,
                                         email,
                                         googleResponse.nickname(),
                                         null,

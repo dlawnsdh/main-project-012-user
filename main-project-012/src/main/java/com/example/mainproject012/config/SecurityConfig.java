@@ -6,14 +6,20 @@ import com.example.mainproject012.dto.security.GoogleOAuth2Response;
 import com.example.mainproject012.dto.security.MemberPrincipal;
 import com.example.mainproject012.handler.OAuthSuccessHandler;
 import com.example.mainproject012.service.MemberService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.authentication.OAuth2LoginReactiveAuthenticationManager;
+import org.springframework.security.oauth2.client.endpoint.WebClientReactiveAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.userinfo.DefaultReactiveOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.ReactiveOAuth2UserService;
@@ -39,21 +45,24 @@ public class SecurityConfig {
 
     @Bean
     public SecurityWebFilterChain configure(ServerHttpSecurity http
-                                            //oAuth2UserService oAuthMemberService
+                                            //OAuthMemberService oAuthMemberService
                                             //MemberService memberService
                                             //ReactiveAuthenticationManager reactiveAuthenticationManager
     ) throws Exception {
         return http
                 .authorizeExchange(auth -> auth
-                        //.pathMatchers(HttpMethod.GET, "/").permitAll()
+                        //.pathMatchers(HttpMethod.GET, "/").hasRole("USER")
+                        .pathMatchers(HttpMethod.DELETE, "/members/**").permitAll()
                         .pathMatchers("/login").permitAll()
                         .anyExchange().authenticated()
                 )
+                .csrf().disable()
+                .cors().disable()
+                .formLogin().disable()
+                .httpBasic().disable()
                 //.authenticationManager(reactiveAuthenticationManager)
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
-                .oauth2Login()
-                .authenticationSuccessHandler(new OAuthSuccessHandler(jwtTokenProvider, memberService))
-                        .and()
+                .oauth2Login(oauth -> oauth.authenticationSuccessHandler(new OAuthSuccessHandler(jwtTokenProvider, memberService)))
                 .exceptionHandling()
                 .accessDeniedHandler((exchange, exception) -> Mono.error(new RuntimeException("접근 권한 없음")))
                         .and()
@@ -61,15 +70,22 @@ public class SecurityConfig {
                 .build();
     }
 
-    // 필수
-    @Bean
+    /*@Bean
+    public ReactiveAuthenticationManager reactiveAuthenticationManager(ReactiveOAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService) {
+        WebClientReactiveAuthorizationCodeTokenResponseClient client = new WebClientReactiveAuthorizationCodeTokenResponseClient();
+        return new OAuth2LoginReactiveAuthenticationManager(client, oAuth2UserService);
+    }*/
+
+    //TODO: 반드시 얘를 거쳐서 토큰이 생성되어야 함!
+    /*@Bean
     public ReactiveOAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService(MemberService memberService) {
+        log.info("This is oAuth2UserService in SecurityConfig!!!!");
         final DefaultReactiveOAuth2UserService delegate = new DefaultReactiveOAuth2UserService();
 
         return userRequest -> {
             Mono<OAuth2User> oAuth2User = delegate.loadUser(userRequest);
 
-            log.info("This is oAuth2UserService in SecurityConfig!!!!");
+            //log.info("This is oAuth2UserService in SecurityConfig!!!!");
 
             GoogleOAuth2Response googleResponse = GoogleOAuth2Response.from(Objects.requireNonNull(oAuth2User.block()).getAttributes());
             String registrationId = userRequest.getClientRegistration().getRegistrationId();
@@ -93,21 +109,21 @@ public class SecurityConfig {
                         return null;
                     });
         };
-    }
+    }*/
 
     /*@Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
                                                          ReactiveOAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService
     ) {
         return http
-                *//*.exceptionHandling(exceptionHandlingSpec -> exceptionHandlingSpec
+                .exceptionHandling(exceptionHandlingSpec -> exceptionHandlingSpec
                         .authenticationEntryPoint((exchange, ex) -> Mono.fromRunnable(() -> {
                             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                         }))
                         .accessDeniedHandler((exchange, denied) -> Mono.fromRunnable(() -> {
                             exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                         }))
-                )*//*
+                )
                 .csrf().disable()
                 .cors().disable()
                 .formLogin().disable()
@@ -129,20 +145,6 @@ public class SecurityConfig {
                 .build();
     }*/
 
-    /*@Bean
-    public ReactiveAuthenticationManager reactiveAuthenticationManager(ReactiveOAuth2UserService oAuth2UserService) {
-        UserDetailsRepositoryReactiveAuthenticationManager authenticationManager =
-                new UserDetailsRepositoryReactiveAuthenticationManager((ReactiveUserDetailsService) oAuth2UserService);
-
-        return authenticationManager;
-    }*/
-
-    /*@Bean
-    public ReactiveAuthenticationManager reactiveAuthenticationManager(ReactiveOAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService) {
-        WebClientReactiveAuthorizationCodeTokenResponseClient client = new WebClientReactiveAuthorizationCodeTokenResponseClient();
-        return new OAuth2LoginReactiveAuthenticationManager(client, oAuth2UserService);
-    }
-*/
     /*private ServerOAuth2AuthorizationRequestResolver authorizationRequestResolver(
             ReactiveClientRegistrationRepository clientRegistrationRepository) {
 
