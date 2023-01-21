@@ -11,6 +11,10 @@ import java.util.Optional;
 public interface MemberRepository extends ReactiveCrudRepository<Member, Long> {
     Mono<Member> findByEmail(String email);
 
+    Flux<Member> findAllByNickname(String nickname);
+
+    Mono<Member> findByMemberId(Long memberId);
+
     @Query("SELECT count(member_id) FROM member")
     Mono<Long> findMemberCount();
 }

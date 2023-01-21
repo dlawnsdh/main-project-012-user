@@ -11,3 +11,12 @@ create table if not exists member (
     modified_at datetime not null,
     primary key (member_id)
 );
+
+create table if not exists follow (
+    id bigint not null auto_increment,
+    follower_email varchar(100) not null unique,
+    following_email varchar(100) not null unique,
+    created_at datetime not null,
+    modified_at datetime not null,
+    primary key (id)
+);
