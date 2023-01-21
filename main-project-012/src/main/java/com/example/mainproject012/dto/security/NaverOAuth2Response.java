@@ -2,7 +2,7 @@ package com.example.mainproject012.dto.security;
 
 import java.util.Map;
 
-/*
+
 @SuppressWarnings("unchecked")
 public record NaverOAuth2Response(
         String email,
@@ -15,8 +15,11 @@ public record NaverOAuth2Response(
         return new NaverOAuth2Response(
                 String.valueOf(attributes.get("email")),
                 String.valueOf(attributes.get("name")),
-                String.valueOf(attributes.get("photoUrl"))
+                String.valueOf(attributes.get("photoUrl")),
+                null,
+                null
         );
     }
+
 }
-*/
+

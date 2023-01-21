@@ -1,9 +1,6 @@
 package com.example.mainproject012.dto;
 
 import com.example.mainproject012.domain.Member;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.relational.core.mapping.Column;
 
 import java.time.LocalDateTime;
 

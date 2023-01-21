@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -50,20 +51,28 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain configure(ServerHttpSecurity http) throws Exception {
         return http
+                .csrf().disable()
+                .formLogin().disable()
+                .httpBasic().disable()
                 .authorizeExchange(auth -> auth
-                        .pathMatchers(HttpMethod.DELETE, "/members/**").permitAll()
+                        .pathMatchers(HttpMethod.DELETE, "/members/**").permitAll() // 임시
                         .pathMatchers("/login").permitAll()
                         .anyExchange().authenticated()
                 )
-                .csrf().disable()
-                .cors().disable()
-                .formLogin().disable()
-                .httpBasic().disable()
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance()) // stateless
                 .oauth2Login(oauth -> oauth.authenticationSuccessHandler(new OAuthSuccessHandler(jwtTokenProvider)))
-                .exceptionHandling()
-                .accessDeniedHandler((exchange, exception) -> Mono.error(new RuntimeException("접근 권한 없음")))
-                        .and()
+                /*.exceptionHandling(exceptionHandlingSpec -> exceptionHandlingSpec
+                        .authenticationEntryPoint((exchange, ex) -> {
+                            return Mono.fromRunnable(() -> {
+                                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                            });
+                        })
+                        .accessDeniedHandler((exchange, denied) -> {
+                            return Mono.fromRunnable(() -> {
+                                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                            });
+                        }))*/
+                //.exceptionHandling(exceptionHandlingSpec -> exceptionHandlingSpec.accessDeniedHandler((exchange, exception) -> Mono.error(new RuntimeException("접근 권한 없음"))))
                 .addFilterAt(new JwtAuthenticationFilter(jwtTokenProvider), SecurityWebFiltersOrder.HTTP_BASIC)
                 .build();
     }
@@ -81,10 +90,9 @@ public class SecurityConfig {
                     .map(GoogleOAuth2Response::from)
                     .map(GoogleOAuth2Response::toPrincipal)
                     .flatMap(principal -> {
-                        Mono<MemberPrincipal> mp = memberService.verifyExistEmail(principal.email())
-                                .then(memberService.saveMember(principal.toDto(registrationId)))
+                        return memberService.findMember(principal.email())
+                                .switchIfEmpty(memberService.saveMember(principal.toDto(registrationId)))
                                 .map(MemberPrincipal::from);
-                        return mp;
                     });
         };
     }
@@ -102,10 +110,9 @@ public class SecurityConfig {
                     .map(KakaoOAuth2Response::from)
                     .map(KakaoOAuth2Response::toPrincipal)
                     .flatMap(principal -> {
-                        Mono<MemberPrincipal> mp = memberService.verifyExistEmail(principal.email())
-                                .then(memberService.saveMember(principal.toDto(registrationId)))
+                        return memberService.findMember(principal.email())
+                                .switchIfEmpty(memberService.saveMember(principal.toDto(registrationId)))
                                 .map(MemberPrincipal::from);
-                        return mp;
                     });
         };
     }
