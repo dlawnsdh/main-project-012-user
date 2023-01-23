@@ -56,6 +56,7 @@ public class SecurityConfig {
                 .httpBasic().disable()
                 .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.DELETE, "/members/**").permitAll() // 임시
+                        .pathMatchers(HttpMethod.GET, "/members/all").permitAll() // 임시
                         .pathMatchers("/login").permitAll()
                         .anyExchange().authenticated()
                 )

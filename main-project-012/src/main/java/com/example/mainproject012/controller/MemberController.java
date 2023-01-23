@@ -1,8 +1,6 @@
 package com.example.mainproject012.controller;
 
 import com.example.mainproject012.auth.JwtTokenProvider;
-import com.example.mainproject012.domain.Member;
-import com.example.mainproject012.dto.MemberDto;
 import com.example.mainproject012.dto.request.UserPatchRequest;
 import com.example.mainproject012.dto.responose.*;
 import com.example.mainproject012.dto.security.MemberPrincipal;
@@ -76,6 +74,12 @@ public class MemberController {
         return memberService.updateMember(email, patchRequest)
                 .map(MemberPatchResponse::from)
                 .map(ResponseEntity::ok);
+    }
+
+    // 기능 확인 위해 임시로 추가
+    @GetMapping("/all")
+    public Flux<MemberResponse> findAllMembers() {
+        return memberRepository.findAll().map(MemberResponse::from);
     }
 
     // 기능 확인 위해 임시로 추가
