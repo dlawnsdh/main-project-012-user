@@ -5,6 +5,7 @@ import com.example.mainproject012.domain.Member;
 import com.example.mainproject012.dto.MemberDto;
 import com.example.mainproject012.dto.request.UserPatchRequest;
 import com.example.mainproject012.dto.responose.*;
+import com.example.mainproject012.dto.security.MemberPrincipal;
 import com.example.mainproject012.repository.MemberRepository;
 import com.example.mainproject012.service.MemberService;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -51,9 +53,10 @@ public class MemberController {
     }
 
     /*@GetMapping("/mypage")
-    public Mono<ResponseEntity<MemberResponseWithInfo>> myPage(ServerHttpRequest request) {
-        String email = extractEmail(request);
-        return memberService.findMemberByEmail(email).map(ResponseEntity::ok);
+    public Mono<ResponseEntity<MemberResponse>> myPage(ServerHttpRequest request, @AuthenticationPrincipal MemberPrincipal principal) {
+        //String email = extractEmail(request);
+        String email = principal.email();
+        return memberService.findMemberByEmail(email).map(MemberResponse::from).map(ResponseEntity::ok);
     }*/
 
     /*@GetMapping("/{member-id}")
