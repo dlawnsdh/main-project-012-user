@@ -12,12 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 
 @Slf4j
@@ -121,10 +115,10 @@ public class MemberService {
     }
 
     @Transactional
-    public Mono<MemberResponse> updateMember(String email, UserPatchRequest request) {
+    public Mono<MemberResponse> updateMember(Long id, UserPatchRequest request) {
         log.info("This is updateMember in MemberService!!!!");
 
-        return memberRepository.findByEmail(email)
+        return memberRepository.findById(id)
                 .flatMap(member -> {
                     if (request.nickname() != null) member.setNickname(request.nickname());
                     if (request.profileUrl() != null) member.setProfileUrl(request.profileUrl());
@@ -136,8 +130,8 @@ public class MemberService {
                 .map(MemberResponse::from);
     }
 
-    @Transactional
-    public Mono<Void> postFollow(String email, Long followingId) {
+    /*@Transactional
+    public Mono<Void> postFollow(Long followerId, Long followingId) {
         return getMemberEmail(followingId)
                 .flatMap(followingEmail -> {
                     return followService.post(email, followingEmail);
@@ -150,9 +144,9 @@ public class MemberService {
                 .flatMap(followingEmail -> {
                     return followService.cancel(email, followingEmail);
                 });
-    }
+    }*/
 
-    public Mono<Long> countFollowing(String email) {
+    /*public Mono<Long> countFollowing(String email) {
         return followService.countFollowing(email);
     }
 
@@ -161,12 +155,12 @@ public class MemberService {
     }
 
     public Flux<FollowResponseWithInfo> checkFollowing(String email) {
-        return followService.findFollowingByFollowerEmail(email);
+        return followService.findFollowingByFollowerId(email);
     }
 
     public Flux<FollowResponseWithInfo> checkFollower(String email) {
-        return followService.findFollowerByFollowingEmail(email);
-    }
+        return followService.findFollowerByFollowingId(email);
+    }*/
 
     @Transactional(readOnly = true)
     public Mono<Void> verifyExistEmail(String email) {

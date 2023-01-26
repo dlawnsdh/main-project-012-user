@@ -14,8 +14,8 @@ create table if not exists member (
 
 create table if not exists follow (
     id bigint not null auto_increment,
-    follower_email varchar(100) not null unique,
-    following_email varchar(100) not null unique,
+    follower_id bigint not null,
+    following_id bigint not null,
     created_at datetime not null,
     modified_at datetime not null,
     primary key (id)

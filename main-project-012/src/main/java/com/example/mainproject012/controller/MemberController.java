@@ -3,7 +3,6 @@ package com.example.mainproject012.controller;
 import com.example.mainproject012.auth.JwtTokenProvider;
 import com.example.mainproject012.dto.request.UserPatchRequest;
 import com.example.mainproject012.dto.responose.*;
-import com.example.mainproject012.dto.security.MemberPrincipal;
 import com.example.mainproject012.repository.MemberRepository;
 import com.example.mainproject012.service.MemberService;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +10,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -28,9 +26,9 @@ public class MemberController {
 
     @GetMapping("/mypage")
     public Mono<ResponseEntity<MemberResponse>> myPage(ServerHttpRequest request) {
-        String email = extractEmail(request);
+        Long id = extractId(request);
         return memberService.findAllWithInfo()
-                .filter(member -> member.email().equals(email))
+                .filter(member -> member.id().equals(id))
                 .last()
                 .map(ResponseEntity::ok);
     }
@@ -69,9 +67,9 @@ public class MemberController {
 
     @PatchMapping
     public Mono<ResponseEntity<MemberPatchResponse>> updateMember(@RequestBody UserPatchRequest patchRequest,
-                                                                           ServerHttpRequest request) {
-        String email = extractEmail(request);
-        return memberService.updateMember(email, patchRequest)
+                                                                  ServerHttpRequest request) {
+        Long id = extractId(request);
+        return memberService.updateMember(id, patchRequest)
                 .map(MemberPatchResponse::from)
                 .map(ResponseEntity::ok);
     }
@@ -89,11 +87,11 @@ public class MemberController {
                 .then(Mono.just(new ResponseEntity<>("삭제 완료", HttpStatus.NO_CONTENT)));
     }
 
-    private String extractEmail(ServerHttpRequest request) {
+    private Long extractId(ServerHttpRequest request) {
         String bearerToken = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         assert bearerToken != null;
         bearerToken = bearerToken.substring(7);
-        return jwtTokenProvider.getUserEmail(bearerToken);
+        return jwtTokenProvider.getUserId(bearerToken);
     }
 
 }

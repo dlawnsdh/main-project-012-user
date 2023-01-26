@@ -25,8 +25,8 @@ public class MemberCustomRepository {
                     m.birthday as birthday, m.profile_url as profileUrl, 
                     m.gender as gender, m.memo as memo, m.registration_id as registrationId,
                     m.created_at as createdAt, m.modified_at as modifiedAt,
-                    (SELECT COUNT(f.follower_email) as followers FROM follow f WHERE m.email = f.following_email),
-                    (SELECT COUNT(f.following_email) as followings FROM follow f WHERE m.email = f.follower_email)   
+                    (SELECT COUNT(f.follower_id) as followers FROM follow f WHERE m.member_id = f.following_id),
+                    (SELECT COUNT(f.following_id) as followings FROM follow f WHERE m.member_id = f.follower_id)   
                 FROM member m
                 """;
 
@@ -35,8 +35,15 @@ public class MemberCustomRepository {
                 .sort(Comparator.comparing(result -> (Long) result.get(MEMBER_ID_FIELD_NAME)))
                 .bufferUntilChanged(result -> result.get(MEMBER_ID_FIELD_NAME))
                 .map(result -> {
-                    var followers = Long.parseLong(result.get(0).get("(SELECT COUNT(f.follower_email) as followers FROM follow f WHERE m.email = f.following_email)").toString());
-                    var followings = Long.parseLong(result.get(0).get("(SELECT COUNT(f.following_email) as followings FROM follow f WHERE m.email = f.follower_email)").toString());
+                    // AWS 에서 적용하는 코드
+                    //Object followerObj = result.get(0).get("(SELECT COUNT(f.follower_id) as followers FROM follow f WHERE m.member_id = f.following_id)");
+                    //Object followingObj = result.get(0).get("(SELECT COUNT(f.following_id) as followings FROM follow f WHERE m.member_id = f.follower_id)");
+
+                    //var followers = followerObj != null ? Long.parseLong(followerObj.toString()) : 0L;
+                    //var followings = followingObj != null ? Long.parseLong(followingObj.toString()) : 0L;
+
+                    var followers = Long.parseLong(result.get(0).get("(SELECT COUNT(f.follower_id) as followers FROM follow f WHERE m.member_id = f.following_id)").toString());
+                    var followings = Long.parseLong(result.get(0).get("(SELECT COUNT(f.following_id) as followings FROM follow f WHERE m.member_id = f.follower_id)").toString());
 
                     var row = result.get(0);
                     return MemberResponse.from(Member.builder()
