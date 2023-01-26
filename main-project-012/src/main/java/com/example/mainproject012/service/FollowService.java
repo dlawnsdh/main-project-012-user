@@ -19,34 +19,34 @@ public class FollowService {
     private final FollowRepository followRepository;
     private final MemberRepository memberRepository;
 
-    public Mono<Void> post(String followerEmail, String followingEmail) {
-        return followRepository.findByFollowerEmailAndFollowingEmail(followerEmail, followingEmail)
-                .switchIfEmpty(followRepository.save(Follow.of(followerEmail, followingEmail)))
+    public Mono<Void> post(Long followerId, Long followingId) {
+        return followRepository.findByFollowerIdAndFollowingId(followerId, followingId)
+                .switchIfEmpty(followRepository.save(Follow.of(followerId, followingId)))
                 .then();
     }
 
-    public Mono<Void> cancel(String followerEmail, String followingEmail) {
-        return followRepository.deleteByFollowerEmailAndFollowingEmail(followerEmail, followingEmail);
+    public Mono<Void> cancel(Long followerId, Long followingId) {
+        return followRepository.deleteByFollowerIdAndFollowingId(followerId, followingId);
     }
 
-    public Mono<Long> countFollowing(String followerEmail) {
-        return followRepository.countAllByFollowerEmail(followerEmail);
+    public Mono<Long> countFollowing(Long followerId) {
+        return followRepository.countAllByFollowerId(followerId);
     }
 
-    public Mono<Long> countFollower(String followingEmail) {
-        return followRepository.countAllByFollowerEmail(followingEmail);
+    public Mono<Long> countFollower(Long followingId) {
+        return followRepository.countAllByFollowerId(followingId);
     }
 
-    public Flux<FollowResponseWithInfo> findFollowingByFollowerEmail(String followerEmail) {
-        return followRepository.findAllByFollowerEmail(followerEmail)
-                .flatMap(follow -> memberRepository.findByEmail(follow.getFollowingEmail()))
+    public Flux<FollowResponseWithInfo> findFollowingByFollowerId(Long followerId) {
+        return followRepository.findAllByFollowerId(followerId)
+                .flatMap(follow -> memberRepository.findById(follow.getFollowingId()))
                 .map(MemberDto::from)
                 .map(FollowResponseWithInfo::from);
     }
 
-    public Flux<FollowResponseWithInfo> findFollowerByFollowingEmail(String followingEmail) {
-        return followRepository.findAllByFollowingEmail(followingEmail)
-                .flatMap(follow -> memberRepository.findByEmail(follow.getFollowerEmail()))
+    public Flux<FollowResponseWithInfo> findFollowerByFollowingId(Long followingId) {
+        return followRepository.findAllByFollowingId(followingId)
+                .flatMap(follow -> memberRepository.findById(follow.getFollowerId()))
                 .map(MemberDto::from)
                 .map(FollowResponseWithInfo::from);
     }

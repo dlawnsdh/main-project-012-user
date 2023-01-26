@@ -18,6 +18,7 @@ public record GoogleOAuth2Response(
 
     public MemberPrincipal toPrincipal() {
         return MemberPrincipal.of(
+                "",
                 email,
                 nickname,
                 null,
